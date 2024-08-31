@@ -1,5 +1,6 @@
 package com.example.hotelreservation.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
@@ -8,6 +9,7 @@ import jakarta.persistence.*;
 public class Room {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private int roomNumber;
     private int type; // 1: single, 2: double, 3: suite, 4: matrimonial
     private double price;
@@ -17,7 +19,16 @@ public class Room {
 
     @ManyToOne
     @JoinColumn(name = "hotel_id")
+    @JsonBackReference
     private Hotel hotel;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public int getRoomNumber() {
         return roomNumber;

@@ -1,5 +1,6 @@
 package com.example.hotelreservation.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.util.List;
 
@@ -13,7 +14,8 @@ public class Hotel {
     private double latitude;
     private double longitude;
 
-    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private List<Room> rooms;
 
     // Getters and setters

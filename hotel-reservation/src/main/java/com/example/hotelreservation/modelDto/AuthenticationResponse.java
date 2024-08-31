@@ -1,4 +1,4 @@
-package com.example.hotelreservation.model;
+package com.example.hotelreservation.modelDto;
 
 public class AuthenticationResponse {
     private final String jwt;

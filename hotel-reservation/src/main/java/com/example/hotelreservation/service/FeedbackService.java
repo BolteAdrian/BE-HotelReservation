@@ -41,24 +41,35 @@ public class FeedbackService {
      * @param userId the ID of the user leaving the feedback.
      * @param comment the comment text of the feedback.
      * @param rating the rating given in the feedback.
-     * @return the saved Feedback object.
+     * @return the boolean answer.
      * @throws IllegalArgumentException if the hotel ID is invalid (i.e., the hotel does not exist).
      */
     @Transactional
-    public Feedback leaveFeedback(Long hotelId, Long userId, String comment, int rating) {
-        // Fetch the hotel entity using the hotelId
-        Hotel hotel = hotelRepository.findById(hotelId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid hotel ID: " + hotelId));
+    public boolean leaveFeedback(Long hotelId, Long userId, String comment, int rating) {
+        try {
+            // Fetch the hotel entity using the hotelId
+            Hotel hotel = hotelRepository.findById(hotelId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid hotel ID: " + hotelId));
 
-        // Create a new feedback object
-        Feedback feedback = new Feedback();
-        feedback.setHotel(hotel);  // Set the hotel entity
-        feedback.setUserId(userId);
-        feedback.setComment(comment);
-        feedback.setRating(rating);
+            // Create a new feedback object
+            Feedback feedback = new Feedback();
+            feedback.setHotel(hotel);  // Set the hotel entity
+            feedback.setUserId(userId);
+            feedback.setComment(comment);
+            feedback.setRating(rating);
 
-        // Save and return the feedback
-        return feedbackRepository.save(feedback);
+            // Save the feedback
+            feedbackRepository.save(feedback);
+
+            // If we reach here, it means the save was successful
+            return true;
+        } catch (Exception e) {
+            // Log the exception (optional)
+            // logger.error("Failed to leave feedback", e);
+
+            // Return false if there was an exception
+            return false;
+        }
     }
 
     /**

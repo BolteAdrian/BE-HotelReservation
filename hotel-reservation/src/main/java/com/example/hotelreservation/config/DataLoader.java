@@ -19,19 +19,31 @@ public class DataLoader {
     @Autowired
     private HotelRepository hotelRepository;
 
+    /**
+     * Bean that loads data from a JSON file when the application starts.
+     * The data is mapped to Hotel objects and saved to the database.
+     *
+     * @return CommandLineRunner that runs at application startup.
+     */
     @Bean
-    public CommandLineRunner loadData() {
+    public CommandLineRunner loadInitialHotelData() {
         return args -> {
             ObjectMapper objectMapper = new ObjectMapper();
-            TypeReference<List<Hotel>> typeReference = new TypeReference<List<Hotel>>() {};
+            TypeReference<List<Hotel>> hotelListTypeReference = new TypeReference<List<Hotel>>() {};
             InputStream inputStream = TypeReference.class.getResourceAsStream("/hotels.json");
+
             try {
-                List<Hotel> hotels = objectMapper.readValue(inputStream, typeReference);
+                // Read the data from the JSON file and map it to Hotel objects
+                List<Hotel> hotels = objectMapper.readValue(inputStream, hotelListTypeReference);
+
+                // Set the associated Hotel for each Room in the list
                 for (Hotel hotel : hotels) {
                     for (Room room : hotel.getRooms()) {
                         room.setHotel(hotel);
                     }
                 }
+
+                // Save all Hotel objects to the database
                 hotelRepository.saveAll(hotels);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -39,4 +51,3 @@ public class DataLoader {
         };
     }
 }
-

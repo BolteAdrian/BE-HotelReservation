@@ -103,10 +103,10 @@ public class HotelController {
      *
      * @param hotelId      the ID of the hotel.
      * @param feedbackDto  the feedback details including user ID, comment, and rating.
-     * @return a {@link Feedback} object representing the submitted feedback.
+     * @return a {@link boolean} representing the submitted feedback.
      */
     @PostMapping("/{hotelId}/feedback")
-    public Feedback submitFeedback(@PathVariable Long hotelId, @RequestBody FeedbackDto feedbackDto) {
+    public boolean submitFeedback(@PathVariable Long hotelId, @RequestBody FeedbackDto feedbackDto) {
         return feedbackService.leaveFeedback(
                 hotelId,
                 feedbackDto.getUserId(),

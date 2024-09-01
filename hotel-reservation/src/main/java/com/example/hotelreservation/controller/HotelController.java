@@ -9,7 +9,12 @@ import com.example.hotelreservation.service.FeedbackService;
 import com.example.hotelreservation.service.HotelService;
 import com.example.hotelreservation.service.ReservationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -44,10 +49,10 @@ public class HotelController {
      * @param userLat the latitude of the user's location.
      * @param userLon the longitude of the user's location.
      * @param radius  the radius within which to search for hotels.
-     * @return a list of {@link Hotel} objects within the specified radius.
+     * @return a list of {@link HotelWithRating} objects within the specified radius.
      */
     @GetMapping("/withinRadius")
-    public List<Hotel> getHotelsWithinRadius(@RequestParam double userLat, @RequestParam double userLon, @RequestParam double radius) {
+    public List<HotelWithRating> getHotelsWithinRadius(@RequestParam double userLat, @RequestParam double userLon, @RequestParam double radius) {
         return hotelService.getHotelsWithinRadius(userLat, userLon, radius);
     }
 
@@ -58,7 +63,7 @@ public class HotelController {
      * @return a list of {@link Room} objects available in the specified hotel.
      */
     @GetMapping("/{hotelId}/rooms")
-    public List<Room> getRooms(@PathVariable Long hotelId) {
+    public List<Room> getAvailableRooms(@PathVariable Long hotelId) {
         return hotelService.getRooms(hotelId);
     }
 
@@ -79,6 +84,21 @@ public class HotelController {
     }
 
     /**
+     * Changes an existing reservation for a given user in a specific hotel.
+     *
+     * @param changeReservationDto the DTO containing user ID, hotel ID, and the new room ID.
+     * @return the updated {@link Reservation} object after the change.
+     */
+    @PostMapping("/change")
+    public Reservation changeReservation(@RequestBody ChangeReservationDto changeReservationDto) {
+        return reservationService.changeReservation(
+                changeReservationDto.getUserId(),
+                changeReservationDto.getHotelId(),
+                changeReservationDto.getNewRoomId()
+        );
+    }
+
+    /**
      * Submits feedback for a specific hotel.
      *
      * @param hotelId      the ID of the hotel.
@@ -86,7 +106,7 @@ public class HotelController {
      * @return a {@link Feedback} object representing the submitted feedback.
      */
     @PostMapping("/{hotelId}/feedback")
-    public Feedback leaveFeedback(@PathVariable Long hotelId, @RequestBody FeedbackDto feedbackDto) {
+    public Feedback submitFeedback(@PathVariable Long hotelId, @RequestBody FeedbackDto feedbackDto) {
         return feedbackService.leaveFeedback(
                 hotelId,
                 feedbackDto.getUserId(),
@@ -96,20 +116,65 @@ public class HotelController {
     }
 
     /**
-     * Retrieves a list of rooms and feedbacks for a specific hotel.
+     * Retrieves the details of a hotel including available rooms, feedback, and reservation status for a specific user.
      *
-     * @param hotelId the ID of the hotel.
-     * @return a {@link HotelDetailsDto} object containing a list of rooms and feedbacks for the specified hotel.
+     * This method fetches the details of a hotel based on the hotel ID and optionally, the user's reservation status.
+     * It also allows filtering available rooms based on a specified date range.
+     *
+     * @param hotelId the ID of the hotel for which details are being requested.
+     * @param userId the ID of the user to check for any existing reservations.
+     * @param startDate optional start date for filtering available rooms. If not provided, defaults to the current date.
+     * @param endDate optional end date for filtering available rooms. If not provided, defaults to one day after the start date.
+     * @return a {@link HotelDetailsDto} object containing details about the hotel, including available rooms and feedback.
      */
     @GetMapping("/{hotelId}/details")
-    public HotelDetailsDto getRoomsAndFeedback(@PathVariable Long hotelId) {
-        List<Room> rooms = hotelService.getRooms(hotelId);
-        List<Feedback> feedbacks = feedbackService.getFeedbacks(hotelId);
+    public HotelDetailsDto getHotelDetails(
+            @PathVariable Long hotelId,
+            @RequestParam Long userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) String startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) String endDate) {
 
+        // Convert strings to LocalDate
+        LocalDate startLocalDate = startDate != null ? LocalDate.parse(startDate) : LocalDate.now();
+        LocalDate endLocalDate = endDate != null ? LocalDate.parse(endDate) : startLocalDate.plusDays(1);
+
+        // Convert LocalDate to LocalDateTime with default time
+        LocalDateTime start = startLocalDate.atStartOfDay();
+        LocalDateTime end = endLocalDate.atStartOfDay().plusDays(1); // Consider end date as inclusive
+
+        // Retrieve available rooms based on the specified date range
+        List<Room> rooms = reservationService.getAvailableRooms(hotelId, start, end);
+
+        // Fetch feedback for the hotel
+        List<FeedbackDto> feedbacks = feedbackService.getFeedbacks(hotelId);
+
+        // Check if the user has a reservation at the hotel
+        boolean hasReservation = reservationService.userHasReservation(userId, hotelId);
+
+        // Create and populate a DTO with hotel details
         HotelDetailsDto hotelDetailsDto = new HotelDetailsDto();
         hotelDetailsDto.setRooms(rooms);
         hotelDetailsDto.setFeedbacks(feedbacks);
+        hotelDetailsDto.setHasReservation(hasReservation);
 
         return hotelDetailsDto;
+    }
+
+    /**
+     * Handles the check-out process for a specific room in a hotel.
+     *
+     * This endpoint is used to process the check-out of a room identified by the given room ID.
+     * It updates the room's availability status and removes any existing reservations for the room.
+     *
+     * @param hotelId the ID of the hotel where the room is located.
+     * @param roomId the ID of the room that is being checked out.
+     * @return a {@link ResponseEntity} with HTTP status 200 OK if the operation is successful.
+     */
+    @PutMapping("/{hotelId}/rooms/{roomId}/check-out")
+    public ResponseEntity<Void> checkOut(@PathVariable Long hotelId, @PathVariable Long roomId) {
+        // Perform the check-out operation
+        reservationService.checkOut(roomId);
+        // Return HTTP 200 OK response
+        return ResponseEntity.ok().build();
     }
 }

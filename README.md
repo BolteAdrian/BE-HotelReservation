@@ -1,6 +1,6 @@
 # HotelReservationApp
 
-This project was created using [Angular CLI](https://github.com/angular/angular-cli) version 15.0.4 and integrates with Java Spring and PostgreSQL for the database.
+This project was created using [Angular CLI](https://github.com/angular/angular-cli) version 15.0.4 for frontend and integrates with Java Spring and PostgreSQL for the database.
 
 #Link to Frontend: https://github.com/BolteAdrian/FE-HotelReservation
 
